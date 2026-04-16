@@ -1,0 +1,14 @@
+name = "Curves"
+version = "0.1.0"
+defaultTargets = ["curves"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+[[lean_lib]]
+name = "Curves"
+
+[[lean_exe]]
+name = "curves"
+root = "Main"
