@@ -35,16 +35,22 @@ noncomputable def arcLength (α : ParametrizedDifferentiableCurve) (t : ℝ) : �
 def isArcLengthParametrized (α : ParametrizedDifferentiableCurve) : Prop :=
   ∀ t ∈ Set.Ioo α.a α.b, ‖deriv α.toFun t‖ = 1
 
-/-- The **curvature** κ(t) = ‖α''(t)‖ of a curve α parametrized by arc length. -/
+/-- The **curvature** κ(t) = ‖α''(s)‖ of a curve α parametrized by arc length. -/
 noncomputable def Curvature (α : ParametrizedDifferentiableCurve) (t : ℝ) : ℝ :=
   ‖deriv (deriv α.toFun) t‖
 
-/-- The **unit tangent vector** T(t) = α'(t) of a curve parametrized by arc length. -/
+/-- The **unit tangent vector** T(s) = α'(s) of a curve parametrized by arc length. -/
 noncomputable def curveTangent (α : ParametrizedDifferentiableCurve)
     (_h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
   deriv α.toFun t
 
-/-- The **principal normal vector** N(t) = α''(t) / κ(t) of a curve parametrized by arc length. -/
+/-- The **principal normal vector** N(s) = α''(s) / κ(s) of a curve parametrized by arc length. -/
 noncomputable def curveNormal (α : ParametrizedDifferentiableCurve)
     (_h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
   (1 / Curvature α t) • deriv (deriv α.toFun) t
+
+/-- The **binormal vector** B(s) = T(s) × N(s) of a curve parametrized by arc length. -/
+noncomputable def curveBinormal (α : ParametrizedDifferentiableCurve)
+    (h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
+  let e := EuclideanSpace.equiv (Fin 3) ℝ
+  e.symm (crossProduct (e (curveTangent α h t)) (e (curveNormal α h t)))
