@@ -8,7 +8,8 @@ scope = "leanprover-community"
 
 [[require]]
 name = "doc-gen4"
-scope = "leanprover-community"
+git = "https://github.com/leanprover/doc-gen4"
+rev = "main"
 
 [[lean_lib]]
 name = "Curves"
