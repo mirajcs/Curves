@@ -45,3 +45,10 @@ def isArcLengthParametrized (α : ParametrizedDifferentiableCurve) : Prop :=
 /-- Let α: I → ℝ³ be a curve parametrized by arc length s ∈ I. The number ‖α''(s)‖ = κ(s) is called the curvature of α at s. -/
 noncomputable def Curvature (α : ParametrizedDifferentiableCurve) (t : ℝ) : ℝ :=
   ‖deriv (deriv α.toFun) t‖
+
+/-- The unit tangent vector T(t) = α'(t), valid when α is arc-length parametrized -/
+noncomputable def curveTangent (α : ParametrizedDifferentiableCurve)
+    (_h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
+  deriv α.toFun t
+
+
