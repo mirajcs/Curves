@@ -6,6 +6,10 @@ defaultTargets = ["curves"]
 name = "mathlib"
 scope = "leanprover-community"
 
+[[require]]
+name = "doc-gen4"
+scope = "leanprover-community"
+
 [[lean_lib]]
 name = "Curves"
 
