@@ -40,3 +40,35 @@ noncomputable example (r h left right : ℝ) (hrl : left < right) : Parametrized
     exact ((((differentiable_const r).mul Real.differentiable_cos).smul_const _).add
         (((differentiable_const r).mul Real.differentiable_sin).smul_const _)).add
         (((differentiable_const h).mul differentiable_id).smul_const _)
+
+/-- 
+  Example of parametric curve which has derivative zero at t = 0 
+  α(t) = (t²,t)
+-/ 
+noncomputable example (left right : ℝ) (hrl : left < right) :
+    ParametrizedDifferentiableCurve where 
+      a := left 
+      b := right 
+      hab := hrl 
+      toFun t := 
+        t ^ 3 • EuclideanSpace.basisFun (Fin 3) ℝ 0 + 
+        t ^ 2 • EuclideanSpace.basisFun (Fin 3) ℝ 1 + 
+        0 • EuclideanSpace.basisFun (Fin 3) ℝ 2 
+      differentiableOn := by
+        apply Differentiable.differentiableOn
+        exact (((differentiable_pow 3).smul_const _).add
+            ((differentiable_pow 2).smul_const _)).add
+            (differentiable_const _)
+
+/--
+The derivative of α(t) = (t³, t²) at t = 0 is the zero vector.
+α'(t) = (3t², 2t, 0), so α'(0) = (0, 0).
+-/
+example : HasDerivAt (fun t : ℝ =>
+    t ^ 3 • EuclideanSpace.basisFun (Fin 3) ℝ 0 +
+    t ^ 2 • EuclideanSpace.basisFun (Fin 3) ℝ 1 ) 0 0 := by
+  have h1 : HasDerivAt (fun t : ℝ => t ^ 3 • EuclideanSpace.basisFun (Fin 3) ℝ 0) 0 0 := by
+    simpa using (hasDerivAt_pow 3 (0 : ℝ)).smul_const (EuclideanSpace.basisFun (Fin 3) ℝ 0)
+  have h2 : HasDerivAt (fun t : ℝ => t ^ 2 • EuclideanSpace.basisFun (Fin 3) ℝ 1) 0 0 := by
+    simpa using (hasDerivAt_pow 2 (0 : ℝ)).smul_const (EuclideanSpace.basisFun (Fin 3) ℝ 1)
+  simpa using h1.add h2

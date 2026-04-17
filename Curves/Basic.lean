@@ -1,8 +1,8 @@
 import Curves.ParametrizedCurves
 
-/--
-*References*
-- Differntial Geometry of Curves & Sufaces - Manfredo P. Do Carmo
-  -/
+/-!
+# Curves
 
-
+Formalization of results from:
+- *Differential Geometry of Curves & Surfaces* — Manfredo P. Do Carmo
+-/
