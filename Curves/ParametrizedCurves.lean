@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 import Mathlib.LinearAlgebra.CrossProduct
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
@@ -108,6 +109,40 @@ private lemma dot_tangent (α : ParametrizedDifferentiableCurve)
   simp only [curveTangent]
   have h1 : ‖deriv α.toFun t‖ = 1 := h t ht
   rw [real_inner_self_eq_norm_sq, h1, one_pow]
+
+
+private lemma orthogonality_tangent_normal (α : ParametrizedDifferentiableCurve)
+      (h : isArcLengthParametrized α) (t : ℝ) (ht : t ∈ Set.Ioo α.a α.b) : 
+    ⟪curveTangent α h t, curveNormal α h t⟫_ℝ = 0 := by 
+    simp only [curveTangent, curveNormal]
+    rw [real_inner_smul_right]
+    apply mul_eq_zero_of_right 
+    -- T is differentiable at t (from C^∞ of α)
+    have hdiff : DifferentiableAt ℝ (curveTangent α h) t := by
+      -- ContDiffOn ℝ ⊤ α implies ContDiffOn ℝ 1 (deriv α) on the open interval
+      have hc : ContDiffOn ℝ 1 (deriv α.toFun) (Set.Ioo α.a α.b) :=
+        α.contDiffOn.deriv_of_isOpen isOpen_Ioo le_top
+      exact (hc.differentiableOn one_ne_zero).differentiableAt (isOpen_Ioo.mem_nhds ht)
+
+    -- Product rule: d/dt ⟪T, T⟫ = ⟪T, T'⟫ + ⟪T', T⟫  (order from HasDerivAt.inner)
+    have hexp : deriv (fun s => ⟪curveTangent α h s, curveTangent α h s⟫_ℝ) t =
+        ⟪curveTangent α h t, deriv (curveTangent α h) t⟫_ℝ +
+        ⟪deriv (curveTangent α h) t, curveTangent α h t⟫_ℝ :=
+      (HasDerivAt.inner (𝕜 := ℝ) hdiff.hasDerivAt hdiff.hasDerivAt).deriv
+    -- ⟪T, T⟫ = 1 near t, so its derivative is 0
+    have hzero : deriv (fun s => ⟪curveTangent α h s, curveTangent α h s⟫_ℝ) t = 0 := by
+      have heq : (fun s => ⟪curveTangent α h s, curveTangent α h s⟫_ℝ) =ᶠ[nhds t] (fun _ => 1) :=
+        Filter.eventually_of_mem (isOpen_Ioo.mem_nhds ht) (dot_tangent α h)
+      rw [heq.deriv_eq, deriv_const]
+    -- So ⟪T, T'⟫ + ⟪T', T⟫ = 0
+    have Dh : ⟪curveTangent α h t, deriv (curveTangent α h) t⟫_ℝ +
+              ⟪deriv (curveTangent α h) t, curveTangent α h t⟫_ℝ = 0 := hexp ▸ hzero
+    -- By symmetry ⟪T', T⟫ = ⟪T, T'⟫, so 2⟪T, T'⟫ = 0 → ⟪T, T'⟫ = 0
+    have hsymm : ⟪deriv (curveTangent α h) t, curveTangent α h t⟫_ℝ =
+                 ⟪curveTangent α h t, deriv (curveTangent α h) t⟫_ℝ := real_inner_comm _ _
+    have hfun : curveTangent α h = deriv α.toFun := rfl
+    simp only [hfun] at Dh hsymm
+    linarith [Dh, hsymm]
 
 private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) (hκ : Curvature α t ≠ 0)
