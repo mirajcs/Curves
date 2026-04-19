@@ -150,16 +150,45 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
     curveNormal α h t =
       let e := EuclideanSpace.equiv (Fin 3) ℝ
       e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by
-  -- Proof strategy:
-  -- Since B = T × N (by definition), we have B × T = (T × N) × T.
-  -- By the vector triple product identity (A × B) × A = B(A·A) - A(B·A),
-  -- (T × N) × T = N·⟪T,T⟫ - T·⟪N,T⟫ = N·1 - T·0 = N.
-  -- This requires:
-  --   (1) ⟪T, T⟫ = 1  — from isArcLengthParametrized
-  --   (2) ⟪N, T⟫ = 0  — from differentiating ⟪T, T⟫ = 1
-  --   (3) inner products on EuclideanSpace ℝ (Fin 3) agree with those on Fin 3 → ℝ via e
-  -- These require additional lemmas not yet established.
-  sorry
+  -- Let e : EuclideanSpace ℝ (Fin 3) ≃ (Fin 3 → ℝ) be the equivalence.
+  set e := EuclideanSpace.equiv (Fin 3) ℝ with he
+  -- Step 1: B × T = T × (N × T)
+  -- B = T × N by definition, so e(B) = e(T) × e(N).
+  -- Then (e(T) × e(N)) × e(T) = e(T) × (e(N) × e(T)) - e(N) × (e(T) × e(T))
+  --                             = e(T) × (e(N) × e(T)) - e(N) × 0
+  --                             = e(T) × (e(N) × e(T)).   (by cross_cross and cross_self)
+  have heB : e (curveBinormal α h t) =
+      crossProduct (e (curveTangent α h t)) (e (curveNormal α h t)) := by
+    have hdef : curveBinormal α h t =
+        e.symm (crossProduct (e (curveTangent α h t)) (e (curveNormal α h t))) := rfl
+    rw [hdef, e.apply_symm_apply]
+  have hBT : crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t)) =
+      crossProduct (e (curveTangent α h t))
+        (crossProduct (e (curveNormal α h t)) (e (curveTangent α h t))) := by
+    rw [heB, cross_cross, cross_self, map_zero, sub_zero]
+  -- Step 2: T × (N × T) = (T⬝T)·N − (N⬝T)·T = 1·N − 0·T = N  (BAC-CAB)
+  -- Connect e v ⬝ᵥ e w with ⟪v, w⟫_ℝ via inner_eq_star_dotProduct
+  -- e v = PiLp.ofLp v definitionally (PiLp.coe_continuousLinearEquiv is rfl),
+  -- so EuclideanSpace.inner_eq_star_dotProduct v w : ⟪v,w⟫_ℝ = e w ⬝ᵥ star (e v)  by rfl
+  have dot_e_eq : ∀ v w : ℝ³, e v ⬝ᵥ e w = ⟪v, w⟫_ℝ := fun v w => by
+    have hstar : star (e v) = e v := by ext; simp
+    calc e v ⬝ᵥ e w
+        = e w ⬝ᵥ e v        := dotProduct_comm _ _
+      _ = e w ⬝ᵥ star (e v) := by rw [hstar]
+      _ = ⟪v, w⟫_ℝ          := (EuclideanSpace.inner_eq_star_dotProduct v w).symm
+  have hTT : e (curveTangent α h t) ⬝ᵥ e (curveTangent α h t) = 1 :=
+    (dot_e_eq _ _).trans (dot_tangent α h t ht)
+  have hNT : e (curveNormal α h t) ⬝ᵥ e (curveTangent α h t) = 0 :=
+    (dot_e_eq _ _).trans ((real_inner_comm _ _).trans (orthogonality_tangent_normal α h t ht))
+  have hTNT : crossProduct (e (curveTangent α h t))
+      (crossProduct (e (curveNormal α h t)) (e (curveTangent α h t))) =
+      e (curveNormal α h t) := by
+    rw [cross_cross_eq_smul_sub_smul', hTT, hNT, one_smul, zero_smul, sub_zero]
+  calc curveNormal α h t
+      = e.symm (e (curveNormal α h t))            := (e.symm_apply_apply _).symm
+    _ = e.symm (crossProduct (e (curveTangent α h t))
+          (crossProduct (e (curveNormal α h t)) (e (curveTangent α h t)))) := by rw [hTNT]
+    _ = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by rw [← hBT]
 
 /-- **Frenet formula for N**: the derivative of the principal normal is -κ · T + τ · B. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
