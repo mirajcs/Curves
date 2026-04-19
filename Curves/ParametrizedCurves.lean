@@ -9,7 +9,7 @@ open scoped InnerProductSpace
 
 namespace Curves
 
-/-- Notation for the standard 3-dimensional Euclidean space `EuclideanSpace ℝ (Fin 3)`. -/
+/-- `ℝ³` denotes `EuclideanSpace ℝ (Fin 3)`, the standard 3-dimensional real Euclidean space. -/
 scoped notation "ℝ³" => EuclideanSpace ℝ (Fin 3)
 
 /-- A parametrized differentiable curve is a smooth map `α : I → ℝ³` of an open interval
