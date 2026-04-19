@@ -27,12 +27,12 @@ jobs:
             | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-      - name: Cache .lake
+      - name: Cache .lake/build (docInfo artifacts)
         uses: actions/cache@v4
         with:
-          path: .lake
-          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
-          restore-keys: ${{ runner.os }}-lake-
+          path: .lake/build
+          key: ${{ runner.os }}-lake-build-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: ${{ runner.os }}-lake-build-
 
       - name: Get Mathlib cache
         run: lake exe cache get
