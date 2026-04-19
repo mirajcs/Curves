@@ -9,74 +9,75 @@ open scoped InnerProductSpace
 
 namespace Curves
 
-/-- ℝ³ as the standard 3-dimensional Euclidean space -/
+/-- Notation for the standard 3-dimensional Euclidean space `EuclideanSpace ℝ (Fin 3)`. -/
 scoped notation "ℝ³" => EuclideanSpace ℝ (Fin 3)
 
-/-- A parametrized differentiable curve is a smooth map α : I → ℝ³ of an open interval
-I = (a, b) of the real line ℝ into ℝ³.
+/-- A parametrized differentiable curve is a smooth map `α : I → ℝ³` of an open interval
+`I = (a, b)` of the real line into `ℝ³`.
 
-Reference: Do Carmo, *Differential Geometry of Curves & Surfaces*, §1-2. -/
+**Reference:** Do Carmo, *Differential Geometry of Curves & Surfaces*, §1-2. -/
 structure ParametrizedDifferentiableCurve where
-  /-- Left endpoint of the open interval -/
+  /-- Left endpoint `a` of the open interval `(a, b)`. -/
   a : ℝ
-  /-- Right endpoint of the open interval -/
+  /-- Right endpoint `b` of the open interval `(a, b)`. -/
   b : ℝ
-  /-- The interval is non-degenerate -/
+  /-- The interval is non-degenerate: `a < b`. -/
   hab : a < b
-  /-- The curve map α : ℝ → ℝ³ (evaluated on (a, b)) -/
+  /-- The curve map `α : ℝ → ℝ³`, evaluated on `(a, b)`. -/
   toFun : ℝ → ℝ³
-  /-- α is smooth (C^∞) on the open interval (a, b) -/
+  /-- `α` is smooth (`C^∞`) on the open interval `(a, b)`. -/
   contDiffOn : ContDiffOn ℝ ⊤ toFun (Set.Ioo a b)
 
-/-- A parametrized differentiable curve α : I → ℝ³ is **regular** if α'(t) ≠ 0 for all t ∈ I. -/
+/-- A parametrized differentiable curve `α : I → ℝ³` is **regular** if `α'(t) ≠ 0`
+for all `t ∈ (a, b)`. -/
 def regularCurve (α : ParametrizedDifferentiableCurve) : Prop :=
   ∀ t ∈ Set.Ioo α.a α.b, deriv α.toFun t ≠ 0
 
-/-- The arc length of α measured from `α.a` to `t`: `s(t) = ∫_a^t ‖α'(u)‖ du` -/
+/-- The arc length of `α` measured from `α.a` to `t`, defined by `s(t) = ∫_a^t ‖α'(u)‖ du`. -/
 noncomputable def arcLength (α : ParametrizedDifferentiableCurve) (t : ℝ) : ℝ :=
   ∫ u in α.a..t, ‖deriv α.toFun u‖
 
-/-- α is **parametrized by arc length** if ‖α'(t)‖ = 1 for all t ∈ (a, b). -/
+/-- `α` is **parametrized by arc length** if `‖α'(t)‖ = 1` for all `t ∈ (a, b)`. -/
 def isArcLengthParametrized (α : ParametrizedDifferentiableCurve) : Prop :=
   ∀ t ∈ Set.Ioo α.a α.b, ‖deriv α.toFun t‖ = 1
 
-/-- The **curvature** κ(t) = ‖α''(s)‖ of a curve α parametrized by arc length. -/
+/-- The **curvature** `κ(t) = ‖α''(t)‖` of a curve `α` parametrized by arc length. -/
 noncomputable def Curvature (α : ParametrizedDifferentiableCurve) (t : ℝ) : ℝ :=
   ‖deriv (deriv α.toFun) t‖
 
-/-- The **unit tangent vector** T(s) = α'(s) of a curve parametrized by arc length. -/
+/-- The **unit tangent vector** `T(t) = α'(t)` of a curve `α` parametrized by arc length. -/
 noncomputable def curveTangent (α : ParametrizedDifferentiableCurve)
     (_h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
   deriv α.toFun t
 
-/-- The **principal normal vector** N(s) = α''(s) / κ(s) of a curve parametrized by arc length. -/
+/-- The **principal normal vector** `N(t) = α''(t) / κ(t)` of a curve `α` parametrized by arc length. -/
 noncomputable def curveNormal (α : ParametrizedDifferentiableCurve)
     (_h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
   (1 / Curvature α t) • deriv (deriv α.toFun) t
 
-/-- The **binormal vector** B(s) = T(s) × N(s) of a curve parametrized by arc length. -/
+/-- The **binormal vector** `B(t) = T(t) × N(t)` of a curve `α` parametrized by arc length. -/
 noncomputable def curveBinormal (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) : ℝ³ :=
   let e := EuclideanSpace.equiv (Fin 3) ℝ
   e.symm (crossProduct (e (curveTangent α h t)) (e (curveNormal α h t)))
 
 
-/-- The **torsion** τ(s) of a curve parametrized by arc length, defined by τ(s) = -‖B'(s)‖. -/
+/-- The **torsion** `τ(t) = ‖B'(t)‖` of a curve `α` parametrized by arc length. -/
 noncomputable def Torsion (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) : ℝ :=
   ‖deriv (curveBinormal α h) t‖
 
 /-- The **Frenet trihedron** (moving frame) at a point on a curve, consisting of the
-unit tangent T, principal normal N, and binormal B vectors. -/
+unit tangent `T`, principal normal `N`, and binormal `B` vectors. -/
 structure FrenetFrame where
-  /-- Unit tangent vector T(s) = α'(s) -/
+  /-- Unit tangent vector `T(t) = α'(t)`. -/
   tangent  : ℝ³
-  /-- Principal normal vector N(s) = α''(s) / κ(s) -/
+  /-- Principal normal vector `N(t) = α''(t) / κ(t)`. -/
   normal   : ℝ³
-  /-- Binormal vector B(s) = T(s) × N(s) -/
+  /-- Binormal vector `B(t) = T(t) × N(t)`. -/
   binormal : ℝ³
 
-/-- The **Frenet trihedron** {T(t), N(t), B(t)} of a curve α parametrized by arc length at t. -/
+/-- The **Frenet trihedron** `{T(t), N(t), B(t)}` of a curve `α` parametrized by arc length at `t`. -/
 noncomputable def frenetTrihedron (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) : FrenetFrame where
   tangent  := curveTangent α h t
@@ -85,13 +86,13 @@ noncomputable def frenetTrihedron (α : ParametrizedDifferentiableCurve)
 
 /-! ## Frenet-Serret Formulas
 
-For a curve α parametrized by arc length, the derivatives of the Frenet trihedron satisfy:
-- T'(s) = κ(s) · N(s)
-- N'(s) = -κ(s) · T(s) + τ(s) · B(s)
-- B'(s) = -τ(s) · N(s)
+For a curve `α` parametrized by arc length, the derivatives of the Frenet trihedron satisfy:
+- `T'(t) = κ(t) · N(t)`
+- `N'(t) = -κ(t) · T(t) + τ(t) · B(t)`
+- `B'(t) = -τ(t) · N(t)`
 -/
 
-/-- **Frenet formula for T**: the derivative of the unit tangent is κ · N. -/
+/-- **Frenet formula for T**: the derivative of the unit tangent is `κ(t) • N(t)`. -/
 theorem deriv_tangent (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) (hκ : Curvature α t ≠ 0) :
     deriv (curveTangent α h) t = Curvature α t • curveNormal α h t := by
@@ -145,7 +146,7 @@ private lemma orthogonality_tangent_normal (α : ParametrizedDifferentiableCurve
     linarith [Dh, hsymm]
 
 private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
-    (h : isArcLengthParametrized α) (t : ℝ) (hκ : Curvature α t ≠ 0)
+    (h : isArcLengthParametrized α) (t : ℝ)
     (ht : t ∈ Set.Ioo α.a α.b) :
     curveNormal α h t =
       let e := EuclideanSpace.equiv (Fin 3) ℝ
@@ -190,14 +191,14 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
           (crossProduct (e (curveNormal α h t)) (e (curveTangent α h t)))) := by rw [hTNT]
     _ = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by rw [← hBT]
 
-/-- **Frenet formula for N**: the derivative of the principal normal is -κ · T + τ · B. -/
+/-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) + τ(t) • B(t)`. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) :
     deriv (curveNormal α h) t =
       -(Curvature α t) • curveTangent α h t + Torsion α h t • curveBinormal α h t := by
   sorry
 
-/-- **Frenet formula for B**: the derivative of the binormal is -τ · N. -/
+/-- **Frenet formula for B**: the derivative of the binormal is `-τ(t) • N(t)`. -/
 theorem deriv_binormal (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) :
     deriv (curveBinormal α h) t = -(Torsion α h t) • curveNormal α h t := by
