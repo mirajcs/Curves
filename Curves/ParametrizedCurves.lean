@@ -191,17 +191,22 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
           (crossProduct (e (curveNormal α h t)) (e (curveTangent α h t)))) := by rw [hTNT]
     _ = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by rw [← hBT]
 
-/-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) + τ(t) • B(t)`. -/
+/-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) - τ(t) • B(t)`. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) :
     deriv (curveNormal α h) t =
       -(Curvature α t) • curveTangent α h t + Torsion α h t • curveBinormal α h t := by
-  sorry
+  set e := EuclideanSpace.equiv (Fin 3) ℝ
+  have hn : curveNormal α h t = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by sorry 
+  have hn' : deriv (curveNormal α h) t =
+      e.symm (crossProduct (e (deriv (curveBinormal α h) t)) (e (curveTangent α h t)) +
+              crossProduct (e (curveBinormal α h t)) (e (deriv (curveTangent α h) t))) := by sorry 
+  sorry 
 
-/-- **Frenet formula for B**: the derivative of the binormal is `-τ(t) • N(t)`. -/
+/-- **Frenet formula for B**: the derivative of the binormal is `τ(t) • N(t)`. -/
 theorem deriv_binormal (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) :
-    deriv (curveBinormal α h) t = -(Torsion α h t) • curveNormal α h t := by
+    deriv (curveBinormal α h) t = (Torsion α h t) • curveNormal α h t := by
   sorry
 
 end Curves
