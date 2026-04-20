@@ -193,14 +193,31 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
 
 /-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) - τ(t) • B(t)`. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
-    (h : isArcLengthParametrized α) (t : ℝ) :
+    (h : isArcLengthParametrized α) (t : ℝ) (ht : t ∈ Set.Ioo α.a α.b) :
     deriv (curveNormal α h) t =
       -(Curvature α t) • curveTangent α h t + Torsion α h t • curveBinormal α h t := by
   set e := EuclideanSpace.equiv (Fin 3) ℝ
-  have hn : curveNormal α h t = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by sorry 
+  have hn : curveNormal α h t = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) :=
+      binormal_cross α h t ht
   have hn' : deriv (curveNormal α h) t =
       e.symm (crossProduct (e (deriv (curveBinormal α h) t)) (e (curveTangent α h t)) +
-              crossProduct (e (curveBinormal α h t)) (e (deriv (curveTangent α h) t))) := by sorry 
+              crossProduct (e (curveBinormal α h t)) (e (deriv (curveTangent α h) t))) := by
+    -- curveNormal agrees near t with the cross-product formula (binormal_cross holds on all of Ioo)
+    have heq : curveNormal α h =ᶠ[nhds t]
+        fun s => e.symm (crossProduct (e (curveBinormal α h s)) (e (curveTangent α h s))) :=
+      Filter.eventually_of_mem (isOpen_Ioo.mem_nhds ht) (fun s hs => binormal_cross α h s hs)
+    rw [heq.deriv_eq]
+    -- HasDerivAt for e ∘ curveBinormal and e ∘ curveTangent
+    have hB : HasDerivAt (fun s => e (curveBinormal α h s)) (e (deriv (curveBinormal α h) t)) t := sorry
+    have hT : HasDerivAt (fun s => e (curveTangent α h s)) (e (deriv (curveTangent α h) t)) t := sorry
+    -- product rule: d/dt [B(t) ×₃ T(t)] = B'(t) ×₃ T(t) + B(t) ×₃ T'(t)
+    -- crossProduct is bilinear so we need its derivative as a CLM-valued function
+    have hprod : HasDerivAt
+        (fun s => crossProduct (e (curveBinormal α h s)) (e (curveTangent α h s)))
+        (crossProduct (e (deriv (curveBinormal α h) t)) (e (curveTangent α h t)) +
+         crossProduct (e (curveBinormal α h t)) (e (deriv (curveTangent α h) t))) t := sorry
+    -- e.symm is a CLM: chain rule via HasFDerivAt.comp_hasDerivAt
+    exact (((e.symm : (Fin 3 → ℝ) →L[ℝ] ℝ³).hasFDerivAt).comp_hasDerivAt t hprod).deriv
   sorry 
 
 /-- **Frenet formula for B**: the derivative of the binormal is `τ(t) • N(t)`. -/
