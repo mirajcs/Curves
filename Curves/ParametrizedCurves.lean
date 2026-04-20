@@ -193,7 +193,8 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
 
 /-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) - τ(t) • B(t)`. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
-    (h : isArcLengthParametrized α) (t : ℝ) (ht : t ∈ Set.Ioo α.a α.b) :
+    (h : isArcLengthParametrized α) (t : ℝ) (ht : t ∈ Set.Ioo α.a α.b)
+    (hκ : Curvature α t ≠ 0) :
     deriv (curveNormal α h) t =
       -(Curvature α t) • curveTangent α h t + Torsion α h t • curveBinormal α h t := by
   set e := EuclideanSpace.equiv (Fin 3) ℝ
@@ -207,9 +208,60 @@ theorem deriv_normal (α : ParametrizedDifferentiableCurve)
         fun s => e.symm (crossProduct (e (curveBinormal α h s)) (e (curveTangent α h s))) :=
       Filter.eventually_of_mem (isOpen_Ioo.mem_nhds ht) (fun s hs => binormal_cross α h s hs)
     rw [heq.deriv_eq]
-    -- HasDerivAt for e ∘ curveBinormal and e ∘ curveTangent
-    have hB : HasDerivAt (fun s => e (curveBinormal α h s)) (e (deriv (curveBinormal α h) t)) t := sorry
-    have hT : HasDerivAt (fun s => e (curveTangent α h s)) (e (deriv (curveTangent α h) t)) t := sorry
+    -- HasDerivAt for e ∘ curveBinormal: curveBinormal is smooth (C^∞ of α), then chain rule with CLM e
+    have hB : HasDerivAt (fun s => e (curveBinormal α h s)) (e (deriv (curveBinormal α h) t)) t := by
+      have hBdiff : DifferentiableAt ℝ (curveBinormal α h) t := by
+        have hTdiff : DifferentiableAt ℝ (curveTangent α h) t := by
+          have hc : ContDiffOn ℝ 1 (deriv α.toFun) (Set.Ioo α.a α.b) :=
+            α.contDiffOn.deriv_of_isOpen isOpen_Ioo le_top
+          exact (hc.differentiableOn one_ne_zero).differentiableAt (isOpen_Ioo.mem_nhds ht)
+        have hNdiff : DifferentiableAt ℝ (curveNormal α h) t := by
+          -- curveNormal α h s = (1 / ‖α''(s)‖) • α''(s)
+          show DifferentiableAt ℝ
+              (fun s => (1 / ‖deriv (deriv α.toFun) s‖) • deriv (deriv α.toFun) s) t
+          have hα2 : DifferentiableAt ℝ (deriv (deriv α.toFun)) t := by
+            have hc : ContDiffOn ℝ 1 (deriv (deriv α.toFun)) (Set.Ioo α.a α.b) :=
+              (α.contDiffOn.deriv_of_isOpen isOpen_Ioo le_top).deriv_of_isOpen isOpen_Ioo le_top
+            exact (hc.differentiableOn one_ne_zero).differentiableAt (isOpen_Ioo.mem_nhds ht)
+          have hα2ne : deriv (deriv α.toFun) t ≠ 0 :=
+            fun h0 => hκ (by simp [Curvature, h0])
+          have hscalar : DifferentiableAt ℝ (fun s => (1 : ℝ) / ‖deriv (deriv α.toFun) s‖) t :=
+            (differentiableAt_const 1).div (hα2.norm ℝ hα2ne) (norm_ne_zero_iff.mpr hα2ne)
+          exact hscalar.smul hα2
+        have h1 : DifferentiableAt ℝ (fun s => e (curveTangent α h s)) t :=
+          (e : ℝ³ →L[ℝ] (Fin 3 → ℝ)).differentiableAt.comp t hTdiff
+        have h2 : DifferentiableAt ℝ (fun s => e (curveNormal α h s)) t :=
+          (e : ℝ³ →L[ℝ] (Fin 3 → ℝ)).differentiableAt.comp t hNdiff
+        -- crossProduct (e T(s)) (e N(s)) is differentiable: reduce to polynomial coords
+        have hcpdiff : DifferentiableAt ℝ
+            (fun s => crossProduct (e (curveTangent α h s)) (e (curveNormal α h s))) t := by
+          have hTi : ∀ i : Fin 3, DifferentiableAt ℝ (fun s => e (curveTangent α h s) i) t :=
+            fun i => (differentiableAt_pi.mp h1) i
+          have hNi : ∀ i : Fin 3, DifferentiableAt ℝ (fun s => e (curveNormal α h s) i) t :=
+            fun i => (differentiableAt_pi.mp h2) i
+          rw [differentiableAt_pi]; intro i; fin_cases i
+          · show DifferentiableAt ℝ (fun s =>
+                e (curveTangent α h s) 1 * e (curveNormal α h s) 2 -
+                e (curveTangent α h s) 2 * e (curveNormal α h s) 1) t
+            exact ((hTi 1).mul (hNi 2)).sub ((hTi 2).mul (hNi 1))
+          · show DifferentiableAt ℝ (fun s =>
+                e (curveTangent α h s) 2 * e (curveNormal α h s) 0 -
+                e (curveTangent α h s) 0 * e (curveNormal α h s) 2) t
+            exact ((hTi 2).mul (hNi 0)).sub ((hTi 0).mul (hNi 2))
+          · show DifferentiableAt ℝ (fun s =>
+                e (curveTangent α h s) 0 * e (curveNormal α h s) 1 -
+                e (curveTangent α h s) 1 * e (curveNormal α h s) 0) t
+            exact ((hTi 0).mul (hNi 1)).sub ((hTi 1).mul (hNi 0))
+        -- e.symm is CLM: compose to get differentiability of curveBinormal
+        exact DifferentiableAt.comp t (e.symm : (Fin 3 → ℝ) →L[ℝ] ℝ³).differentiableAt hcpdiff
+      exact (e : ℝ³ →L[ℝ] (Fin 3 → ℝ)).hasFDerivAt.comp_hasDerivAt t hBdiff.hasDerivAt
+    -- HasDerivAt for e ∘ curveTangent: curveTangent = deriv α.toFun is C^1 (from C^∞ of α)
+    have hT : HasDerivAt (fun s => e (curveTangent α h s)) (e (deriv (curveTangent α h) t)) t := by
+      have hTdiff : DifferentiableAt ℝ (curveTangent α h) t := by
+        have hc : ContDiffOn ℝ 1 (deriv α.toFun) (Set.Ioo α.a α.b) :=
+          α.contDiffOn.deriv_of_isOpen isOpen_Ioo le_top
+        exact (hc.differentiableOn one_ne_zero).differentiableAt (isOpen_Ioo.mem_nhds ht)
+      exact (e : ℝ³ →L[ℝ] (Fin 3 → ℝ)).hasFDerivAt.comp_hasDerivAt t hTdiff.hasDerivAt
     -- product rule: d/dt [B(t) ×₃ T(t)] = B'(t) ×₃ T(t) + B(t) ×₃ T'(t)
     -- crossProduct is bilinear so we need its derivative as a CLM-valued function
     have hprod : HasDerivAt
