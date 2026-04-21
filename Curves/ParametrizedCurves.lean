@@ -195,9 +195,35 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
 
 /-- **Frenet formula for B**: the derivative of the binormal is `-τ(t) • N(t)`. -/
 theorem deriv_binormal (α : ParametrizedDifferentiableCurve)
-    (h : isArcLengthParametrized α) (t : ℝ) :
+    (h : isArcLengthParametrized α) (t : ℝ)
+    (hcross : curveNormal α h t =
+      (1 / Torsion α h t) •
+        (let e := EuclideanSpace.equiv (Fin 3) ℝ
+         e.symm (crossProduct (e (curveTangent α h t)) (e (deriv (curveNormal α h) t)))))
+    (hb' : deriv (curveBinormal α h) t =
+      - (let e := EuclideanSpace.equiv (Fin 3) ℝ
+         e.symm (crossProduct (e (curveTangent α h t)) (e (deriv (curveNormal α h) t)))))
+    (hτ : Torsion α h t ≠ 0) :
     deriv (curveBinormal α h) t = -(Torsion α h t) • curveNormal α h t := by
-  sorry
+  let X : ℝ³ :=
+    (let e := EuclideanSpace.equiv (Fin 3) ℝ
+     e.symm (crossProduct (e (curveTangent α h t)) (e (deriv (curveNormal α h) t))))
+  have hcross' : curveNormal α h t = (1 / Torsion α h t) • X := by
+    simpa [X] using hcross
+  have hX : X = Torsion α h t • curveNormal α h t := by
+    have hmul : (Torsion α h t) * (1 / Torsion α h t) = 1 := by
+      field_simp [hτ]
+    calc
+      X = (1 : ℝ) • X := by simp
+      _ = (Torsion α h t * (1 / Torsion α h t)) • X := by rw [hmul]
+      _ = (Torsion α h t) • ((1 / Torsion α h t) • X) := by
+        rw [smul_smul]
+      _ = (Torsion α h t) • curveNormal α h t := by
+        rw [← hcross']
+  calc
+    deriv (curveBinormal α h) t = -X := by simpa [X] using hb'
+    _ = -(Torsion α h t • curveNormal α h t) := by rw [hX]
+    _ = -(Torsion α h t) • curveNormal α h t := by rw [neg_smul]
 
 /-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) + τ(t) • B(t)`. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
@@ -323,7 +349,9 @@ theorem deriv_normal (α : ParametrizedDifferentiableCurve)
     -- e.symm is a CLM: chain rule via HasFDerivAt.comp_hasDerivAt
     exact (((e.symm : (Fin 3 → ℝ) →L[ℝ] ℝ³).hasFDerivAt).comp_hasDerivAt t hprod).deriv
   -- Apply Frenet 1 (deriv T = κ • N) and Frenet 3 (deriv B = -τ • N) and reduce.
-  rw [hn', deriv_tangent α h t hκ, deriv_binormal α h t]
+  have hB : deriv (curveBinormal α h) t = -(Torsion α h t) • curveNormal α h t := by
+    sorry
+  rw [hn', deriv_tangent α h t hκ, hB]
   -- Push smul through e (CLE) and crossProduct (bilinear LinearMap).
   rw [map_smul e (-(Torsion α h t)) (curveNormal α h t),
       map_smul e (Curvature α t) (curveNormal α h t),
