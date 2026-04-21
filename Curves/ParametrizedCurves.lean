@@ -1,9 +1,11 @@
 import Mathlib.Analysis.Calculus.ContDiff.Basic
+import Mathlib.Analysis.Calculus.Deriv.Prod
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 import Mathlib.LinearAlgebra.CrossProduct
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.Tactic 
 
 open scoped InnerProductSpace
 
@@ -191,7 +193,13 @@ private lemma binormal_cross (α : ParametrizedDifferentiableCurve)
           (crossProduct (e (curveNormal α h t)) (e (curveTangent α h t)))) := by rw [hTNT]
     _ = e.symm (crossProduct (e (curveBinormal α h t)) (e (curveTangent α h t))) := by rw [← hBT]
 
-/-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) - τ(t) • B(t)`. -/
+/-- **Frenet formula for B**: the derivative of the binormal is `-τ(t) • N(t)`. -/
+theorem deriv_binormal (α : ParametrizedDifferentiableCurve)
+    (h : isArcLengthParametrized α) (t : ℝ) :
+    deriv (curveBinormal α h) t = -(Torsion α h t) • curveNormal α h t := by
+  sorry
+
+/-- **Frenet formula for N**: the derivative of the principal normal is `-κ(t) • T(t) + τ(t) • B(t)`. -/
 theorem deriv_normal (α : ParametrizedDifferentiableCurve)
     (h : isArcLengthParametrized α) (t : ℝ) (ht : t ∈ Set.Ioo α.a α.b)
     (hκ : Curvature α t ≠ 0) :
@@ -267,15 +275,100 @@ theorem deriv_normal (α : ParametrizedDifferentiableCurve)
     have hprod : HasDerivAt
         (fun s => crossProduct (e (curveBinormal α h s)) (e (curveTangent α h s)))
         (crossProduct (e (deriv (curveBinormal α h) t)) (e (curveTangent α h t)) +
-         crossProduct (e (curveBinormal α h t)) (e (deriv (curveTangent α h) t))) t := sorry
+         crossProduct (e (curveBinormal α h t)) (e (deriv (curveTangent α h) t))) t := by
+      have hBi : ∀ i : Fin 3, HasDerivAt
+          (fun s => e (curveBinormal α h s) i)
+          (e (deriv (curveBinormal α h) t) i) t :=
+        fun i => (hasDerivAt_pi.mp hB) i
+      have hTi : ∀ i : Fin 3, HasDerivAt
+          (fun s => e (curveTangent α h s) i)
+          (e (deriv (curveTangent α h) t) i) t :=
+        fun i => (hasDerivAt_pi.mp hT) i
+      rw [hasDerivAt_pi]
+      intro i
+      fin_cases i
+      · -- component 0: B 1 * T 2 - B 2 * T 1
+        convert ((hBi 1).mul (hTi 2)).sub ((hBi 2).mul (hTi 1)) using 1
+        show e (deriv (curveBinormal α h) t) 1 * e (curveTangent α h t) 2 -
+              e (deriv (curveBinormal α h) t) 2 * e (curveTangent α h t) 1 +
+            (e (curveBinormal α h t) 1 * e (deriv (curveTangent α h) t) 2 -
+             e (curveBinormal α h t) 2 * e (deriv (curveTangent α h) t) 1) =
+            e (deriv (curveBinormal α h) t) 1 * e (curveTangent α h t) 2 +
+            e (curveBinormal α h t) 1 * e (deriv (curveTangent α h) t) 2 -
+            (e (deriv (curveBinormal α h) t) 2 * e (curveTangent α h t) 1 +
+             e (curveBinormal α h t) 2 * e (deriv (curveTangent α h) t) 1)
+        ring
+      · -- component 1: B 2 * T 0 - B 0 * T 2
+        convert ((hBi 2).mul (hTi 0)).sub ((hBi 0).mul (hTi 2)) using 1
+        show e (deriv (curveBinormal α h) t) 2 * e (curveTangent α h t) 0 -
+              e (deriv (curveBinormal α h) t) 0 * e (curveTangent α h t) 2 +
+            (e (curveBinormal α h t) 2 * e (deriv (curveTangent α h) t) 0 -
+             e (curveBinormal α h t) 0 * e (deriv (curveTangent α h) t) 2) =
+            e (deriv (curveBinormal α h) t) 2 * e (curveTangent α h t) 0 +
+            e (curveBinormal α h t) 2 * e (deriv (curveTangent α h) t) 0 -
+            (e (deriv (curveBinormal α h) t) 0 * e (curveTangent α h t) 2 +
+             e (curveBinormal α h t) 0 * e (deriv (curveTangent α h) t) 2)
+        ring
+      · -- component 2: B 0 * T 1 - B 1 * T 0
+        convert ((hBi 0).mul (hTi 1)).sub ((hBi 1).mul (hTi 0)) using 1
+        show e (deriv (curveBinormal α h) t) 0 * e (curveTangent α h t) 1 -
+              e (deriv (curveBinormal α h) t) 1 * e (curveTangent α h t) 0 +
+            (e (curveBinormal α h t) 0 * e (deriv (curveTangent α h) t) 1 -
+             e (curveBinormal α h t) 1 * e (deriv (curveTangent α h) t) 0) =
+            e (deriv (curveBinormal α h) t) 0 * e (curveTangent α h t) 1 +
+            e (curveBinormal α h t) 0 * e (deriv (curveTangent α h) t) 1 -
+            (e (deriv (curveBinormal α h) t) 1 * e (curveTangent α h t) 0 +
+             e (curveBinormal α h t) 1 * e (deriv (curveTangent α h) t) 0)
+        ring
     -- e.symm is a CLM: chain rule via HasFDerivAt.comp_hasDerivAt
     exact (((e.symm : (Fin 3 → ℝ) →L[ℝ] ℝ³).hasFDerivAt).comp_hasDerivAt t hprod).deriv
-  sorry 
-
-/-- **Frenet formula for B**: the derivative of the binormal is `τ(t) • N(t)`. -/
-theorem deriv_binormal (α : ParametrizedDifferentiableCurve)
-    (h : isArcLengthParametrized α) (t : ℝ) :
-    deriv (curveBinormal α h) t = (Torsion α h t) • curveNormal α h t := by
-  sorry
+  -- Apply Frenet 1 (deriv T = κ • N) and Frenet 3 (deriv B = -τ • N) and reduce.
+  rw [hn', deriv_tangent α h t hκ, deriv_binormal α h t]
+  -- Push smul through e (CLE) and crossProduct (bilinear LinearMap).
+  rw [map_smul e (-(Torsion α h t)) (curveNormal α h t),
+      map_smul e (Curvature α t) (curveNormal α h t),
+      LinearMap.map_smul₂ crossProduct (-(Torsion α h t))
+        (e (curveNormal α h t)) (e (curveTangent α h t)),
+      LinearMap.map_smul (crossProduct (e (curveBinormal α h t))) (Curvature α t)
+        (e (curveNormal α h t))]
+  -- Compute the cross-product identities `e N × e T = -e B` and `e B × e N = -e T`.
+  have heB_def : e (curveBinormal α h t) =
+      crossProduct (e (curveTangent α h t)) (e (curveNormal α h t)) := rfl
+  have hNT : crossProduct (e (curveNormal α h t)) (e (curveTangent α h t)) =
+      -e (curveBinormal α h t) := by
+    rw [heB_def, ← cross_anticomm]
+  have dot_e_eq : ∀ v w : ℝ³, e v ⬝ᵥ e w = ⟪v, w⟫_ℝ := fun v w => by
+    have hstar : star (e v) = e v := by ext; simp
+    calc e v ⬝ᵥ e w
+        = e w ⬝ᵥ e v        := dotProduct_comm _ _
+      _ = e w ⬝ᵥ star (e v) := by rw [hstar]
+      _ = ⟪v, w⟫_ℝ          := (EuclideanSpace.inner_eq_star_dotProduct v w).symm
+  have hTN_dot : e (curveTangent α h t) ⬝ᵥ e (curveNormal α h t) = 0 :=
+    (dot_e_eq _ _).trans (orthogonality_tangent_normal α h t ht)
+  have hN_norm : ‖curveNormal α h t‖ = 1 := by
+    have hκ_pos : (0 : ℝ) < Curvature α t :=
+      lt_of_le_of_ne (norm_nonneg _) (Ne.symm hκ)
+    show ‖(1 / Curvature α t) • deriv (deriv α.toFun) t‖ = 1
+    rw [norm_smul, Real.norm_of_nonneg (le_of_lt (one_div_pos.mpr hκ_pos))]
+    show 1 / Curvature α t * ‖deriv (deriv α.toFun) t‖ = 1
+    rw [show ‖deriv (deriv α.toFun) t‖ = Curvature α t from rfl]
+    field_simp
+  have hNN_dot : e (curveNormal α h t) ⬝ᵥ e (curveNormal α h t) = 1 := by
+    rw [dot_e_eq, real_inner_self_eq_norm_sq, hN_norm]; norm_num
+  have hBN : crossProduct (e (curveBinormal α h t)) (e (curveNormal α h t)) =
+      -e (curveTangent α h t) := by
+    rw [heB_def, cross_cross_eq_smul_sub_smul, hTN_dot, hNN_dot,
+        zero_smul, one_smul, zero_sub]
+  rw [hNT, hBN]
+  -- (-τ) • -(e B) = τ • e B   and   κ • -(e T) = -(κ • e T)
+  rw [show -(Torsion α h t) • -(e (curveBinormal α h t)) =
+        (Torsion α h t) • e (curveBinormal α h t) from neg_smul_neg _ _,
+      smul_neg (Curvature α t) (e (curveTangent α h t))]
+  -- Push e.symm through add/neg/smul, then reduce e.symm ∘ e.
+  rw [map_add e.symm, map_neg e.symm, map_smul e.symm, map_smul e.symm,
+      e.symm_apply_apply, e.symm_apply_apply]
+  -- Goal: τ • B + -(κ • T) = -(κ) • T + τ • B
+  rw [neg_smul]
+  abel
 
 end Curves
